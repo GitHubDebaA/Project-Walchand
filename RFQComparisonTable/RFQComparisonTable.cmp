@@ -1,0 +1,389 @@
+<!-- Last Modified by Ravi Reddy on 04-03-2023 01:20 PM -->
+
+<aura:component controller="RFQComparisonTable_cls" implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickAction" access="global" >
+    <aura:import library="lightning:alert" property="LightningAlert" />
+    <aura:attribute name="RFQ" type="RFQ__c"/>
+    <aura:attribute name="RFQItems" type="RFQ_Line_Item__c[]"/>
+    <aura:attribute name="VRFQ" type="VRFQ__c[]"/>
+    <aura:attribute name="wrapRFQItems" type="List"/>
+    <aura:attribute name="wrapOtherItems" type="List"/>
+    <aura:attribute name="updateStatus" type="Boolean" default="false"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doinit}"/>
+    
+    <aura:html tag="style">
+        .slds-modal__container{
+        height : 100%;
+        width: 95%;
+        max-width: 180rem;
+        }
+        .modal-body{
+        height : 100px !important;
+        max-height: 100px !important;
+        }
+        .cuf-content {
+        padding: 0 0rem !important;
+        }
+        .slds-p-around--medium {
+        padding: 0rem !important;
+        }       
+        .slds-modal__content{
+        overflow-y:0rem !important;
+        height:unset !important;
+        max-height:unset !important;
+        }
+        html{
+        background-color: #F5F5F5;
+        
+        }
+    </aura:html>
+    
+    <lightning:card>
+        <aura:set attribute="title">
+            <lightning:icon iconName="custom:custom56" size="small"/>
+            RFQ Comparision Table ({!v.RFQ.Name})
+        </aura:set>
+        
+        <aura:set attribute="actions">
+            <lightning:button variant="brand" label="Update" title="Update" onclick="{!c.handleUpdateClick}" disabled="{!v.updateStatus}"/>
+        </aura:set>
+        
+        <aura:set attribute="footer">
+            <div class="slds-section slds-is-open">
+                <h3 class="slds-section__title slds-theme_shade">
+                    <span class="slds-truncate slds-p-horizontal_small">Comparision Table</span>
+                </h3>
+                <div aria-hidden="false" class="slds-section__content slds-p-around_x-small">
+                    <div class="slds-scrollable_x" style="width: 100%;">
+                        <table style="width: 150%;" cellpadding="4" cellspacing="0" class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                            <thead>
+                                <tr class="slds-line-height_reset" style="width: 100%; height: 30px;">
+                                    <th colspan="6" class="seperator" scope="col"></th>
+                                    <aura:iteration items="{!v.VRFQ}" var="item" indexVar="index">
+                                        <th colspan="6" class="slds-text-align_center seperator tableColumnPointer" scope="col" data-id="{!item.Vendor__c}" data-id="{!item.Vendor__c}" >{!item.Vendor__r.Name}</th>
+                                    </aura:iteration>
+                                </tr>
+                                <tr class="slds-line-height_reset" style="width: 100%; height: 30px;">
+                                    <th class="" scope="col"></th>
+                                    <th class="" scope="col">PR No.</th>
+                                    <th class="" scope="col">Material Code</th>
+                                    <th class="" scope="col">Description</th>
+                                    <th class="" scope="col">Required Qty.</th>
+                                    <th class="seperator" scope="col">UOM</th>
+                                    <aura:iteration items="{!v.VRFQ}" var="item" indexVar="index">
+                                        <th class="" scope="col">Priority</th>
+                                        <th class="" scope="col">Material Grade</th>
+                                        <th class="" scope="col">UOM</th>
+                                        <th class="" scope="col">Price</th>
+                                        <th class="" scope="col">Total Amount</th>
+                                        <th class="seperator" scope="col">Offered Quantity</th>
+                                    </aura:iteration>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <aura:iteration items="{!v.wrapRFQItems}" var="item" indexVar="index">
+                                    <tr class="slds-hint-parent tableBackground">
+                                        <td class="" scope="col">{!index + 1}</td>
+                                        <td class="" scope="col">{!item.rfqItem.Purchase_Requisitions__r.Name}</td>
+                                        <td class="" scope="col">{!item.rfqItem.Material_Code__c}</td>
+                                        <td class="" scope="col">
+                                            <div class="slds-truncate" style="width: 200px;">{!item.rfqItem.PR_additional_text__c}</div>
+                                        </td>
+                                        <td class="" scope="col">{!item.rfqItem.PR_Quantity__c}</td>
+                                        <td class="seperator" scope="col">{!item.rfqItem.PR_UOM__c}</td>
+                                        <aura:iteration items="{!item.lstVRFQItems}" var="jtem" indexVar="jndex">
+                                            <td class="{!jtem.className}" scope="col" onclick="{!c.handleSelectVRFQ}" data-id="{!jtem.vrfqItems.Name + '/' + index + '/' + jndex}">{!jtem.vrfqItems.Priority__c}</td>
+                                            <td class="{!jtem.className}" scope="col" onclick="{!c.handleSelectVRFQ}" data-id="{!jtem.vrfqItems.Name + '/' + index + '/' + jndex}">{!jtem.vrfqItems.Material_with_grade_Vendor__c}</td>
+                                            <td class="{!jtem.className}" scope="col" onclick="{!c.handleSelectVRFQ}" data-id="{!jtem.vrfqItems.Name + '/' + index + '/' + jndex}">{!jtem.vrfqItems.Vendor_UOM__c}</td>
+                                            <td class="{!jtem.className}" scope="col" onclick="{!c.handleSelectVRFQ}" data-id="{!jtem.vrfqItems.Name + '/' + index + '/' + jndex}" style="{!'background-color: ' + jtem.priceBackground +';'}">
+                                                <lightning:formattedNumber value="{!jtem.vrfqItems.Price_Vendor__c}" style="currency" currencyCode="INR" maximumFractionDigits="2"/>
+                                            </td>
+                                            <td class="{!jtem.className}" scope="col" onclick="{!c.handleSelectVRFQ}" data-id="{!jtem.vrfqItems.Name + '/' + index + '/' + jndex}">
+                                                <lightning:formattedNumber value="{!jtem.vrfqItems.Line_value1__c}" style="currency" currencyCode="INR" maximumFractionDigits="2"/>
+                                            </td>
+                                            <td class="{!jtem.classNameSeperetor}" scope="col" onclick="{!c.handleSelectVRFQ}" data-id="{!jtem.vrfqItems.Name + '/' + index + '/' + jndex}" style="{!'background-color: ' + jtem.quantityBackground +';'}">{!jtem.vrfqItems.Offered_Quantity2__c}</td>
+                                        </aura:iteration>
+                                    </tr>
+                                </aura:iteration>
+                                
+                                <tr class="slds-hint-parent">
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col" style="font-weight: bold;">Sub Total</td>
+                                    <td class="" scope="col"></td>
+                                    <td class="seperator" scope="col"></td>
+                                    <aura:iteration items="{!v.wrapOtherItems}" var="item" indexVar="jndex">
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col" style="{!'background-color: ' + item.priceBackground +';'}">
+                                            <lightning:formattedNumber value="{!item.subtotal}" style="currency" currencyCode="INR" maximumFractionDigits="2"/>
+                                        </td>
+                                        <td class="seperator" scope="col"></td>
+                                    </aura:iteration>
+                                </tr>
+                                
+                                <tr class="slds-hint-parent">
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col" style="font-weight: bold;">GST Amount</td>
+                                    <td class="" scope="col"></td>
+                                    <td class="seperator" scope="col"></td>
+                                    <aura:iteration items="{!v.wrapOtherItems}" var="item" indexVar="jndex">
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col">
+                                            <lightning:formattedNumber value="{!item.gstAmount}" style="currency" currencyCode="INR" maximumFractionDigits="2"/>                                    
+                                        </td>
+                                        <td class="seperator" scope="col"></td>
+                                    </aura:iteration>
+                                </tr>
+                                
+                                <tr class="slds-hint-parent">
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col" style="font-weight: bold;">Transport Charges</td>
+                                    <td class="" scope="col"></td>
+                                    <td class="seperator" scope="col"></td>
+                                    <aura:iteration items="{!v.wrapOtherItems}" var="item" indexVar="jndex">
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col">
+                                            <lightning:formattedNumber value="{!item.transportCharges}" style="currency" currencyCode="INR" maximumFractionDigits="2"/>
+                                        </td>
+                                        <td class="seperator" scope="col"></td>
+                                    </aura:iteration>
+                                </tr>
+                                
+                                <tr class="slds-hint-parent">
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col" style="font-weight: bold;">Total Value INR</td>
+                                    <td class="" scope="col"></td>
+                                    <td class="seperator" scope="col"></td>
+                                    <aura:iteration items="{!v.wrapOtherItems}" var="item" indexVar="jndex">
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col" style="{!'background-color: ' + item.totalBackground +';'}">
+                                            <lightning:formattedNumber value="{!item.totalValue}" style="currency" currencyCode="INR" maximumFractionDigits="2"/>
+                                        </td>
+                                        <td class="seperator" scope="col"></td>
+                                    </aura:iteration>
+                                </tr>
+                                
+                                <tr class="slds-hint-parent">
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col" style="font-weight: bold;">Inco-Terms</td>
+                                    <td class="" scope="col"></td>
+                                    <td class="seperator" scope="col"></td>
+                                    <aura:iteration items="{!v.VRFQ}" var="item" indexVar="jndex">
+                                        <td class="seperator" scope="col" colspan="6">{!item.Incoterms_Vendor__c}</td>
+                                    </aura:iteration>
+                                </tr>
+                                
+                                <tr class="slds-hint-parent">
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col" style="font-weight: bold;">Packing &amp; Forwarding charges</td>
+                                    <td class="" scope="col"></td>
+                                    <td class="seperator" scope="col"></td>
+                                    <aura:iteration items="{!v.VRFQ}" var="item" indexVar="jndex">
+                                        <td class="seperator" scope="col" colspan="6">{!item.P_F_Value__c}</td>
+                                    </aura:iteration>
+                                </tr>
+                                
+                                <tr class="slds-hint-parent">
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col" style="font-weight: bold;">Payment Term</td>
+                                    <td class="" scope="col"></td>
+                                    <td class="seperator" scope="col"></td>
+                                    <aura:iteration items="{!v.VRFQ}" var="item" indexVar="jndex">
+                                        <td class="seperator" scope="col" colspan="6">{!item.Payment_Terms_Vendor__c}</td>
+                                    </aura:iteration>
+                                </tr>
+                                
+                                <tr class="slds-hint-parent">
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col" style="font-weight: bold;">Delivery</td>
+                                    <td class="" scope="col"></td>
+                                    <td class="seperator" scope="col"></td>
+                                    <aura:iteration items="{!v.VRFQ}" var="item" indexVar="jndex">
+                                        <td class="seperator" scope="col" colspan="6">Not Confirm</td>
+                                    </aura:iteration>
+                                </tr>
+                                
+                                <tr class="slds-hint-parent">
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col"></td>
+                                    <td class="" scope="col" style="font-weight: bold;">Landed Cost</td>
+                                    <td class="" scope="col"></td>
+                                    <td class="seperator" scope="col"></td>
+                                    <aura:iteration items="{!v.wrapOtherItems}" var="item" indexVar="jndex">
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col"></td>
+                                        <td class="" scope="col">
+                                            <lightning:formattedNumber value="{!item.subtotal}" style="currency" currencyCode="INR" maximumFractionDigits="2"/>
+                                        </td>
+                                        <td class="seperator" scope="col"></td>
+                                    </aura:iteration>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="slds-section slds-is-open">
+                <h3 class="slds-section__title slds-theme_shade">
+                    <span class="slds-truncate slds-p-horizontal_small">Priority Table</span>
+                </h3>
+                <div aria-hidden="false" class="slds-section__content slds-p-around_x-small">
+                    <div class="slds-scrollable_x" style="width: 100%;">
+                        <table style="width: 100%;" cellpadding="4" cellspacing="0" class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                            <thead>
+                                <tr class="slds-line-height_reset">
+                                    <th class="" scope="col">
+                                        <div class="slds-truncate">#</div>
+                                    </th>
+                                    <th class="" scope="col">
+                                        <div class="slds-truncate">Purchase Requisitions</div>
+                                    </th>
+                                    <aura:iteration items="{!v.VRFQ}" var="item" indexVar="index">
+                                        <th class="slds-text-align_center" scope="col">
+                                            <div class="slds-truncate" style="width: 200px;">Priority-{!index + 1}</div>
+                                        </th>
+                                    </aura:iteration>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <aura:iteration items="{!v.wrapRFQItems}" var="item" indexVar="index">
+                                    <tr class="slds-hint-parent" data-index="{!index}" >
+                                        <td>
+                                            <div class="slds-truncate">{!index + 1}</div>
+                                        </td>
+                                        <td>
+                                            <div class="slds-truncate">{!item.rfqItem.Purchase_Requisitions__r.Name}</div>
+                                        </td>
+                                        
+                                        <aura:iteration items="{!item.lstVendorPriority}" var="jtem" indexVar="jndex">
+                                            <td data-id="{!jtem.vrfqItems}" class="other">
+                                                <div data-index="{!jndex}" data-indexcol="{!index}" class="{!jtem.className}" ondrop="{!c.onClosedDrop}" ondragover="{!c.allowDrop}" draggable="true" ondragstart="{!c.dragStart}" data-value="{!jtem.vendorName}">{!jtem.vendorName}</div>
+                                            </td>
+                                        </aura:iteration>
+                                    </tr>
+                                </aura:iteration>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="slds-section slds-is-open">
+                <h3 class="slds-section__title slds-theme_shade">
+                    <span class="slds-truncate slds-p-horizontal_small">Color Helper</span>
+                </h3>
+                <div aria-hidden="false" class="slds-section__content slds-p-around_x-small">
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered" aria-label="Example table of Opportunities with vertical borders">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th class="" scope="col">
+                                    <div class="slds-truncate">Price Colour Helper</div>
+                                </th>
+                                <th class="" scope="col">
+                                    <div class="slds-truncate">Offered Quantity Color Helper</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="slds-hint-parent">
+                                <td>
+                                    <div class="slds-truncate">
+                                        <div style="display: flex; flex-direction: row;">
+                                            <span style="width: 50%; margin-right: 10px;">Min Price</span>
+                                            <span style="background-color: #45c65a; padding: 10px; "></span> 
+                                        </div>
+                                    </div>
+                                </td>
+                                <td data-label="Close Date">
+                                    <div class="slds-truncate">
+                                        <div style="display: flex; flex-direction: row;">
+                                            <span style="width: 50%; margin-right: 10px;">Offered Quantity > Required Quantity</span>
+                                            <span style="background-color: #fe9339; padding: 10px; "></span> 
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <tr class="slds-hint-parent">
+                                <td>
+                                    <div class="slds-truncate">
+                                        <div style="display: flex; flex-direction: row;">
+                                            <span style="width: 50%; margin-right: 10px;">Max Price</span>
+                                            <span style="background-color: #fe5c4c; padding: 10px; "></span> 
+                                        </div>
+                                    </div>
+                                </td>
+                                <td data-label="Close Date">
+                                    <div class="slds-truncate">
+                                        <div style="display: flex; flex-direction: row;">
+                                            <span style="width: 50%; margin-right: 10px;">Offered Quantity &lt; Required Quantity</span>
+                                            <span style="background-color: #fff03f; padding: 10px; "></span> 
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <tr class="slds-hint-parent">
+                                <td>
+                                    <div class="slds-truncate">
+                                        <div style="display: flex; flex-direction: row;">
+                                            <span style="width: 50%; margin-right: 10px;">Min Sub Total</span>
+                                            <span style="background-color: #45c65a; padding: 10px; "></span> 
+                                        </div>
+                                    </div>
+                                </td>
+                                <td data-label="Close Date">
+                                    <div class="slds-truncate"></div>
+                                </td>
+                            </tr>
+                            
+                            <tr class="slds-hint-parent">
+                                <td>
+                                    <div class="slds-truncate">
+                                        <div style="display: flex; flex-direction: row;">
+                                            <span style="width: 50%; margin-right: 10px;">Max Sub Total</span>
+                                            <span style="background-color: #fe5c4c; padding: 10px; "></span> 
+                                        </div>
+                                    </div>
+                                </td>
+                                <td data-label="Close Date">
+                                    <div class="slds-truncate"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </aura:set>
+    </lightning:card>
+</aura:component>
