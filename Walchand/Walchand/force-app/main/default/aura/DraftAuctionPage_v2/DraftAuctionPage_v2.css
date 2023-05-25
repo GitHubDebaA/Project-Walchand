@@ -1,0 +1,18 @@
+.THIS .container {
+    background-color: #F3F3F3;
+    border-radius: 15px;
+    box-shadow: -5px -5px 5px rgba(255, 255, 255, 0.2), 
+                5px 5px 5px rgba(0, 0, 0, 0.1),
+                inset -5px -5px 5px rgba(255, 255, 255, 0.2),
+                inset 5px 5px 5px rgba(0, 0, 0, 0.1);
+}
+
+.THIS .color-text-brand {
+    color: #014486;
+}
+
+.THIS .live-gif-annimation {
+    --sds-c-icon-color-foreground-default: rgb(181, 2, 2); 
+    --sds-c-icon-color-foreground:  rgb(181, 2, 2); 
+    transition: 5ms;
+}

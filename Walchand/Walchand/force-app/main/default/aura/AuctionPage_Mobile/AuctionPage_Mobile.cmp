@@ -1,0 +1,422 @@
+<aura:component controller="draftAuctionPageV2_cls"
+    implements="force:appHostable,flexipage:availableForAllPageTypes,flexipage:availableForRecordHome,force:hasRecordId,forceCommunity:availableForAllPageTypes,force:lightningQuickActionwithoutheader,force:hasSObjectName"
+    access="global">
+    <aura:import library="lightning:confirm" property="LightningConfirm" />
+
+    <aura:handler name="init" value="{!this}" action="{!c.doinit}" />
+    <aura:attribute name="dauction" type="Draft_Auction__c" />
+    <aura:attribute name="wrapMeta" type="Object" />
+
+    <aura:attribute name="upcoming_remainingTime" type="Integer" default="0" />
+    <aura:attribute name="upcoming_formattedRTime" type="String" default="0 Days 00:00:00" />
+    <aura:attribute name="upcoming_intervalId" type="String" />
+
+    <aura:attribute name="ongoing_remainingTime" type="Integer" default="0" />
+    <aura:attribute name="ongoing_formattedRTime" type="String" default="0 Days 00:00:00" />
+    <aura:attribute name="ongoing_intervalId" type="String" />
+
+    <aura:attribute name="currentslab_remainingTime" type="Integer" default="0" />
+    <aura:attribute name="currentslab_formattedRTime" type="String" default="0 Days 00:00:00" />
+    <aura:attribute name="currentslab_intervalId" type="String" />
+
+    <aura:attribute name="upcoming_timeoutId" type="String" default="id" />
+    <aura:attribute name="ongoing_timeoutId" type="String" default="id" />
+    <aura:attribute name="ongoing_PositionIntervalId" type="String" default="id" />
+
+    <aura:attribute name="detailsfields" type="List" default="['Auction_Type__c', 'Product_Name__c', 'Product_Code__c', 'Quantity__c', 'UOM__c', 'Base_Price__c', 'Step_Reduction__c', 'Product_Description__c']" />
+    <aura:attribute name="detailsfields_ongoing" type="List" default="['Product_Name__c', 'Product_Code__c', 'Quantity__c', 'UOM__c', 'Base_Price__c', 'Step_Reduction__c', 'Product_Description__c']" />
+    <aura:attribute name="customerPaymentTerms" type="List" default="['Payment_Terms__c']" />
+    <aura:attribute name="customerDeliveryTerms" type="List" default="['Delivery_Terms__c']" />
+    <aura:attribute name="formFactor" type="String" default="{!$Browser.formFactor}" />
+
+    <aura:attribute name="vendorPlusProfile" type="Boolean" default="false" />
+    <aura:attribute name="participatedOrNot" type="boolean" default="false" />
+
+    <aura:attribute name="acceptCustomerPT" type="Boolean" default="false" />
+    <aura:attribute name="acceptCustomerDT" type="boolean" default="false" />
+    <aura:attribute name="vendorPT" type="String" />
+    <aura:attribute name="vendorDT" type="String" />
+    <aura:attribute name="bidRemarks" type="String" />
+
+    <!-- ************************************* UPCOMING AUCTION START ************************************  -->
+
+    <aura:if isTrue="{!v.wrapMeta.upcomingAuction}">
+        <div>
+            <div class="slds-theme_inverse slds-theme_alert-texture slds-text-heading_small slds-p-around_x-small slds-m-bottom_x-small"> Auction will start soon</div>
+            <div class="container slds-m-around_small slds-p-around_small">
+                <p class="slds-align_absolute-center">Auction Will Start In</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                <p>{!v.upcoming_formattedRTime}</p>
+                </p>
+
+                <p class="slds-align_absolute-center">Auction Started Time</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <lightning:formattedDateTime value="{!v.dauction.Auction_Start_Date_Time__c}" year="numeric" month="numeric" day="numeric" hour="2-digit" minute="2-digit" />
+                </p>
+
+                <p class="slds-align_absolute-center">Auction End Time</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <lightning:formattedDateTime value="{!v.dauction.Auction_End_Time__c}" year="numeric" month="numeric" day="numeric" hour="2-digit" minute="2-digit" />
+                </p>
+            </div>
+
+            <div class="container slds-m-around_small slds-p-around_small">
+                <p class="slds-align_absolute-center">Starting Price</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <lightning:formattedNumber value="{!v.dauction.Base_Price__c}" style="currency" currencyCode="{!v.dauction.CurrencyIsoCode}" currencyDisplayAs="code" />
+                </p>
+
+                <p class="slds-align_absolute-center">Slab Price</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <lightning:formattedNumber value="{!v.dauction.Step_Reduction__c}" style="currency" currencyCode="{!v.dauction.CurrencyIsoCode}" currencyDisplayAs="code" />
+                </p>
+
+                <p class="slds-align_absolute-center">Next Slab Price</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <lightning:formattedNumber value="{!v.wrapMeta.nextSlabPrice_Upcoming}" style="currency" currencyCode="{!v.dauction.CurrencyIsoCode}" currencyDisplayAs="code" />
+                </p>
+
+                <p class="slds-align_absolute-center">Slab Change Duration</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">{!v.dauction.Time_Interval_in_minutes__c}&nbsp;Mins</p>
+
+            </div>
+            <div>
+                <lightning:recordForm recordId="{!v.recordId}" objectApiName="Draft_Auction__c" fields="{!v.detailsfields}" columns="2" mode="readonly" density="comfy" />
+                <lightning:card title="Auction Type Description">
+                    <div style="text-align: justify; padding:10px;">
+                        <aura:if isTrue="{!v.dauction.RecordType.Name == 'Forward Auction'}">
+                            <p class="slds-m-bottom_xx-small"> <i>This auction operates on a <b>Forward Bidding
+                                        Process</b>
+                                    and follows the steps outlined below:<br />
+                                    The auction starts with a <b>BASE PRICE of INR {!v.dauction.Base_Price__c}</b> and a
+                                    <b>STEP PRICE of INR {!v.dauction.Step_Reduction__c}</b>.<br />
+                                    The BASE PRICE Increases by <b>INR {!v.dauction.Step_Reduction__c} </b> at each
+                                    <b>SLAB
+                                        TIME of {!v.dauction.Time_Interval_in_minutes__c} mins</b>.<br />
+                                    After <b>{!v.dauction.Time_Interval_in_minutes__c} mins</b> of the auction start,
+                                    the
+                                    <b>NEXT SLAB PRICE will be INR {!v.wrapMeta.nextSlabPrice_Upcoming}</b> (Base Price
+                                    +
+                                    Step Price).<br />
+                                    Again after <b>{!v.dauction.Time_Interval_in_minutes__c} min</b> of the Last Slab,
+                                    the
+                                    <b>Next Slab Price will be INR {!v.wrapMeta.nextnextSlabPrice}</b> (Last Slab Price
+                                    +
+                                    Step Price) and the same will continue till the end of the Auction.<br />
+                                    The winner of the auction will be the individual who accepts the price at a <b>Lower
+                                        Slab earlier than anyone else</b>.<br />
+                                    You will always have the option to <b>Revise your Quote by Accepting Next Slab
+                                        Price</b></i></p>
+                        </aura:if>
+                        <aura:if isTrue="{!v.dauction.RecordType.Name == 'Reverse Auction'}">
+                            <p class="slds-m-bottom_xx-small"> <i>This auction operates on a <b>Reverse Bidding
+                                        Process</b>
+                                    and follows the steps outlined below:<br />
+                                    The auction starts with a <b>BASE PRICE of INR {!v.dauction.Base_Price__c}</b> and a
+                                    <b>STEP PRICE of INR {!v.dauction.Step_Reduction__c}</b>.<br />
+                                    The BASE PRICE decreases by <b>INR {!v.dauction.Step_Reduction__c} </b> at each
+                                    <b>SLAB
+                                        TIME of {!v.dauction.Time_Interval_in_minutes__c} mins</b>.<br />
+                                    After <b>{!v.dauction.Time_Interval_in_minutes__c} mins</b> of the auction start,
+                                    the
+                                    <b>NEXT SLAB PRICE will be INR {!v.wrapMeta.nextSlabPrice_Upcoming}</b> (Base Price
+                                    -
+                                    Step Price).<br />
+                                    Again after <b>{!v.dauction.Time_Interval_in_minutes__c} min</b> of the Last Slab,
+                                    the
+                                    <b>Next Slab Price will be INR {!v.wrapMeta.nextnextSlabPrice}</b> (Last Slab Price
+                                    -
+                                    Step Price) and the same will continue till the end of the Auction.<br />
+                                    The winner of the auction will be the individual who accepts the price at a <b>Lower
+                                        Slab earlier than anyone else</b>.<br />
+                                    You will always have the option to <b>Revise your Quote by Accepting Next Slab
+                                        Price</b></i></p>
+                        </aura:if>
+                        <aura:if isTrue="{!v.dauction.RecordType.Name == 'Generic Auction'}">
+                            <p class="slds-m-bottom_xx-small"><i>Generic Auction : This is a Generic Auction.</i></p>
+                        </aura:if>
+                    </div>
+                    <aura:set attribute="footer">
+                        <lightning:button variant="brand" label="Watch Demo" title="Brand action" onclick="{!c.handleClick }" />
+                    </aura:set>
+                </lightning:card>
+            </div>
+        </div>
+    </aura:if>
+
+    <!-- ************************************* ONGOING AUCTION AREA ************************************  -->
+
+    <aura:if isTrue="{!v.wrapMeta.ongoingAuction}">
+        <div>
+            <div class="slds-theme_success slds-theme_alert-texture slds-p-around_small slds-m-bottom_small">
+                <p class="slds-text-heading_small slds-align_absolute-center">
+                    Auction is live now
+                    <lightning:icon aura:id="live gif" iconName="utility:record" alternativeText="Live.gif" title="Live.gif" size="small" class="slds-m-left_xx-small live-gif-annimation"/>
+                </p>
+                <aura:if isTrue="{!!v.participatedOrNot}">
+                    <p>You have not participated in this auction, please participate and start giving your bid</p>
+                </aura:if>
+            </div>
+
+            <div class="container slds-m-around_small slds-p-around_small">
+                <p class="slds-align_absolute-center">Auction Start Time</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <lightning:formattedDateTime value="{!v.dauction.Auction_Start_Date_Time__c}" year="numeric" month="numeric" day="numeric" hour="2-digit" minute="2-digit" />
+                </p>
+
+                <p class="slds-align_absolute-center">Auction End Time</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <lightning:formattedDateTime value="{!v.dauction.Auction_End_Time__c}" year="numeric" month="numeric" day="numeric" hour="2-digit" minute="2-digit" />
+                </p>
+
+                <p class="slds-align_absolute-center">Auction Will End In</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <!-- <c:ReverseTimerDraftAuction recordId="{!v.recordId}" />     -->
+                <p>{!v.ongoing_formattedRTime }</p>
+                </p>
+            </div>
+
+            <div class="container slds-m-around_small slds-p-around_small">
+                <p class="slds-align_absolute-center">Slab Change Duration</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    {!v.dauction.Time_Interval_in_minutes__c} Minute
+                </p>
+
+                <!-- <aura:if isTrue="{!v.isGeneric==false}">
+                    <p>Last Slab Price</p>
+                    <p class="slds-text-heading_small slds-m-bottom_small color-text-brand">{!v.cur}&nbsp;{!v.last_Slab_price}</p>
+
+                    <p>Next Slab Price</p>
+                    <p class="slds-text-heading_small slds-m-bottom_small color-text-brand">{!v.cur}&nbsp;{!v.next_Slab_price}</p>
+                </aura:if> -->
+
+                <p class="slds-align_absolute-center">Current Slab Will End In</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                <p>{!v.currentslab_formattedRTime}</p>
+                </p>
+            </div>
+
+            <div class="container slds-m-around_small slds-p-around_small">
+                
+                <!-- <p class="slds-align_absolute-center">Last Slab Price</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <lightning:formattedNumber value="{!v.wrapMeta.lastSlabPrice}" style="currency" currencyCode="{!v.dauction.CurrencyIsoCode}" currencyDisplayAs="code" />
+                </p>
+
+                <p class="slds-align_absolute-center">Current Slab Price</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <lightning:formattedNumber value="{!v.dauction.Current_Bid_Price__c}" style="currency" currencyCode="{!v.dauction.CurrencyIsoCode}" currencyDisplayAs="code" />
+                </p>
+
+                <p class="slds-align_absolute-center">Next Slab Price</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <lightning:formattedNumber value="{!v.wrapMeta.nextSlabPrice}" style="currency" currencyCode="{!v.dauction.CurrencyIsoCode}" currencyDisplayAs="code" />
+                </p> -->
+                <div class="slds-scrollable">
+                    <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                        <thead>
+                            <tr class="slds-line-height_reset">
+                                <th class="" scope="col" style="text-align: center;">
+                                    <div class="slds-truncate" title="L1">Last Slab Price</div>
+                                </th>
+                                <th class="" scope="col" style="text-align: center;">
+                                    <div class="slds-truncate" title="L1 count">Current Slab Price</div>
+                                </th>
+                                <th class="" scope="col" style="text-align: center;">
+                                    <div class="slds-truncate" title="Your Position">Next Slab Price</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="slds-hint-parent">
+                                <td data-label="L1" style="text-align: center;">
+                                    <div class="slds-truncate" title="Last Slab Price">
+                                        <lightning:formattedNumber value="{!v.wrapMeta.lastSlabPrice}" style="currency" currencyCode="{!v.dauction.CurrencyIsoCode}" currencyDisplayAs="code" />
+                                    </div>
+                                </td>
+                                <td data-label="L1 Count" style="text-align: center;">
+                                    <div class="slds-truncate" title="L1 Count">
+                                        <lightning:formattedNumber value="{!v.dauction.Current_Bid_Price__c}" style="currency" currencyCode="{!v.dauction.CurrencyIsoCode}" currencyDisplayAs="code" />
+                                    </div>
+                                </td>
+                                <td data-label="Position" style="text-align: center;">
+                                    <div class="slds-truncate" title="Position">
+                                        <lightning:formattedNumber value="{!v.wrapMeta.nextSlabPrice}" style="currency" currencyCode="{!v.dauction.CurrencyIsoCode}" currencyDisplayAs="code" />
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="container slds-m-around_small slds-p-around_small">
+
+                <lightning:layout multipleRows="true">
+                    <lightning:layoutItem size="12" largeDeviceSize="6" mediumDeviceSize="12" smallDeviceSize="12" padding="horizontal-small">
+                        <lightning:recordForm recordId="{!v.recordId}" objectApiName="Draft_Auction__c" fields="{!v.customerPaymentTerms}" columns="1" mode="readonly" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="12" largeDeviceSize="6" mediumDeviceSize="12" smallDeviceSize="12" padding="horizontal-small">
+                        <lightning:input type="checkbox" label="Accept Customer Payment Terms" onchange="{!c.handleChangeTNC}" name="acceptCustomerPT" checked="{!v.acceptCustomerPT}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="12" largeDeviceSize="6" mediumDeviceSize="12" smallDeviceSize="12" padding="horizontal-small">
+                        <lightning:recordForm recordId="{!v.recordId}" objectApiName="Draft_Auction__c" fields="{!v.customerDeliveryTerms}" columns="1" mode="readonly" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="12" largeDeviceSize="6" mediumDeviceSize="12" smallDeviceSize="12" padding="horizontal-small">
+                        <lightning:input type="checkbox" label="Accept Customer Delivery Terms" onchange="{!c.handleChangeTNC}" name="acceptCustomerDT" checked="{!v.acceptCustomerDT}" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="12" largeDeviceSize="12" mediumDeviceSize="12" smallDeviceSize="12" padding="horizontal-small">
+                        <lightning:textarea label="Vendor Payment Terms" value="{!v.vendorPT}" required="true" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="12" largeDeviceSize="12" mediumDeviceSize="12" smallDeviceSize="12" padding="horizontal-small">
+                        <lightning:textarea label="Vendor Customer Delivery Terms" value="{!v.vendorDT}" required="true" />
+                    </lightning:layoutItem>
+                    <lightning:layoutItem size="12" largeDeviceSize="12" mediumDeviceSize="12" smallDeviceSize="12" padding="horizontal-small">
+                        <lightning:textarea label="Bid Remarks" value="{!v.bidRemarks}" />
+                    </lightning:layoutItem>
+                </lightning:layout>
+
+                <div class="slds-m-around_small" style="text-align: center;">
+                    <p>Current Slab Price To Accept</p>
+                    <p class="slds-text-heading_small slds-m-bottom_small color-text-brand">
+                        <lightning:formattedNumber value="{!v.dauction.Current_Bid_Price__c}" style="currency" currencyCode="{!v.dauction.CurrencyIsoCode}" currencyDisplayAs="code" />
+                    </p>
+                </div>
+                <div class="slds-m-around_small" style="text-align: center;">
+                    <aura:if isTrue="{!v.vendorPlusProfile}">
+                        <aura:if isTrue="{!v.participatedOrNot}">
+                            <lightning:button variant="brand" label="Accept Price" title="Accept Price" onclick="{!c.acceptCurrentBid}" />
+                            <br /><br />
+
+                            <aura:if isTrue="{!v.wrapMeta.position == 'N/A'}">
+                                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand">
+                                    You have not given any Bid yet.
+                                </p>
+                            </aura:if>
+                            <div class="slds-scrollable">
+                                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                                    <thead>
+                                        <tr class="slds-line-height_reset">
+                                            <th class="" scope="col" style="text-align: center;">
+                                                <div class="slds-truncate" title="L1">L1 Price</div>
+                                            </th>
+                                            <th class="" scope="col" style="text-align: center;">
+                                                <div class="slds-truncate" title="L1 count">L1 Count</div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="slds-hint-parent">
+                                            <td data-label="L1" style="text-align: center;">
+                                                <div class="slds-truncate" title="L1">
+                                                    {!v.dauction.CurrencyIsoCode}&nbsp;{!v.wrapMeta.l1Price}
+                                                </div>
+                                            </td>
+                                            <td data-label="L1 Count" style="text-align: center;">
+                                                <div class="slds-truncate" title="L1 Count">
+                                                    {!v.wrapMeta.l1Count}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_col-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th class="" scope="col" style="text-align: center;">
+                                                <div class="slds-truncate" title="Your Position">Your Position</div>
+                                            </th>
+                                            <th class="" scope="col" style="text-align: center;">
+                                                <div class="slds-truncate" title="Your Bid Price">Your Bid Price</div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td data-label="Position" style="text-align: center;">
+                                                <div class="slds-truncate" title="Position">
+                                                    <aura:if isTrue="{!v.wrapMeta.postitioncheck == 1}">
+                                                        &#129351; {!v.wrapMeta.position}
+                                                        <aura:set attribute="else">
+                                                            <aura:if isTrue="{!v.wrapMeta.postitioncheck == 2}">
+                                                                &#129352; {!v.wrapMeta.position}
+                                                                <aura:set attribute="else">
+                                                                    <aura:if isTrue="{!v.wrapMeta.postitioncheck == 3}">
+                                                                        &#129353; {!v.wrapMeta.position}
+                                                                        <aura:set attribute="else">
+                                                                            <aura:if isTrue="{!v.wrapMeta.postitioncheck == 4}">
+                                                                                &#x2690; {!v.wrapMeta.position}
+                                                                                <aura:set attribute="else">
+                                                                                    {!v.wrapMeta.position}
+                                                                                </aura:set>    
+                                                                            </aura:if>          
+                                                                        </aura:set>
+                                                                    </aura:if>
+                                                                </aura:set>
+                                                            </aura:if>
+                                                        </aura:set>
+                                                    </aura:if>
+                                                </div>
+                                            </td>
+                                            <td data-label="Your Bid Price" style="text-align: center;">
+                                                <div class="slds-truncate" title="Your Bid Price">
+                                                    {!v.dauction.CurrencyIsoCode}&nbsp;{!v.wrapMeta.bidPrice}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </aura:if>
+                        <aura:if isTrue="{!!v.participatedOrNot}">
+                            <lightning:button variant="brand" label="Participate" title="Brand action" onclick="{!c.participate}" />
+                        </aura:if>
+                    </aura:if>
+                </div>
+            </div>
+
+            <lightning:recordForm recordId="{!v.recordId}" objectApiName="Draft_Auction__c" fields="{!v.detailsfields_ongoing}" columns="2" mode="readonly" density="comfy" />
+        </div>
+
+    </aura:if>
+
+    <!-- ************************************* AUCTION IS FINISHED ************************************  -->
+    <aura:if isTrue="{!v.wrapMeta.finishedAuction}">
+        <div>
+            <div class="slds-theme_warning slds-theme_alert-texture slds-text-heading_small slds-p-around_small slds-m-bottom_small">Auction is Finished</div>
+            
+            <div class="container slds-m-around_small slds-p-around_small">
+                <p class="slds-align_absolute-center">Auction Started At</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <lightning:formattedDateTime value="{!v.dauction.Auction_Start_Date_Time__c}" year="numeric" month="numeric" day="numeric" hour="2-digit" minute="2-digit" />
+                </p>
+                
+                <p class="slds-align_absolute-center">Auction Ended At</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <lightning:formattedDateTime value="{!v.dauction.Auction_End_Time__c}" year="numeric" month="numeric" day="numeric" hour="2-digit" minute="2-digit" />
+                </p>
+            </div>
+            
+            <div class="container slds-m-around_small slds-p-around_small">
+                <p class="slds-align_absolute-center">Auction L1 Price</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <lightning:formattedNumber value="{!v.wrapMeta.currentL1Price}" style="currency" currencyCode="{!v.dauction.CurrencyIsoCode}" currencyDisplayAs="code" />
+                </p>
+                
+                <p class="slds-align_absolute-center">Your Last Bid</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <lightning:formattedNumber value="{!v.wrapMeta.lastBidPrice}" style="currency" currencyCode="{!v.dauction.CurrencyIsoCode}" currencyDisplayAs="code" />
+                </p>
+                
+                <p class="slds-align_absolute-center">Your Position</p>
+                <p class="slds-text-heading_small slds-m-bottom_small color-text-brand slds-align_absolute-center">
+                    <aura:if isTrue="{!v.wrapMeta.postitioncheck == 1}"> &#129351; {!v.wrapMeta.position}</aura:if>
+                    <aura:if isTrue="{!v.wrapMeta.postitioncheck == 2}"> &#129352; {!v.wrapMeta.position}></aura:if>
+                    <aura:if isTrue="{!v.wrapMeta.postitioncheck == 3}"> &#129353; {!v.wrapMeta.position}</aura:if>
+                    <aura:if isTrue="{!v.wrapMeta.postitioncheck == 4}"> &#x2690; {!v.wrapMeta.position} </aura:if>
+                </p>
+            </div>
+            <lightning:recordForm recordId="{!v.recordId}" objectApiName="Draft_Auction__c" fields="{!v.detailsfields}" columns="2" mode="readonly" density="comfy" />
+        </div>
+    </aura:if>
+</aura:component>

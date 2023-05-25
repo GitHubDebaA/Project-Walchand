@@ -1,0 +1,48 @@
+.THIS {
+}
+
+.THIS .seperator {
+    border-right: 2pt solid #C9C9C9;
+}
+
+.THIS .tableBackground {
+    background-color: #d8e6fe;
+}
+
+.THIS .tableColumnPointer {
+    cursor: pointer;
+}
+
+.THIS .tableTDSelected {
+    background-color: #cdefc4;
+}
+
+.THIS .colors {
+    background-color: red;
+}
+
+.THIS .dragStart {
+    background-color: #d8e6fe;
+    padding-left: 5px;
+    border-bottom : 1pt solid #1b96ff;
+}
+
+.THIS .my-class-dragged {
+    background-color: blue;
+}
+
+.THIS .my-class-dragged-row {
+    background-color: green;
+}
+
+.THIS .my-class-dropped {
+     background-color: yellow;
+}
+
+.THIS .other {
+     background-color: none;
+}
+
+.THIS .other:hover {
+    background-color: brown;
+}
